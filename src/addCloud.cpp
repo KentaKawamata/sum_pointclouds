@@ -11,7 +11,7 @@ namespace addCloud {
     SumCloud::SumCloud() : 
         sum_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         cloud (new pcl::PointCloud<pcl::PointXYZ>()),
-        filepath ("/mnt/datas/ply_data/"),
+        filepath ("/mnt/container-data/ply_data/"),
         count (0)
     {
     }
@@ -26,6 +26,7 @@ namespace addCloud {
             cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
 
             filename = filepath + std::to_string(i) + ".ply";
+            std::cout << "READ FILE NAME : " << filename << std::endl;
             pcl::io::loadPLYFile(filename, *cloud);
         
             *sum_cloud += *cloud;
@@ -34,15 +35,16 @@ namespace addCloud {
 
     void SumCloud::savePointcloud() {
 
-        std::string save_filename = "/root/ply_data/test.ply"; 
+        std::string save_filename = "/mnt/container-data/test.ply"; 
         std::cout << "SAVE FILE NAME : " << save_filename << std::endl;
-        pcl::io::savePLYFileASCII(filename, *sum_cloud);
+        pcl::io::savePLYFileASCII(save_filename, *sum_cloud);
     }
 
     void SumCloud::getfileNum() {
 
         namespace fs = boost::filesystem;
         if(!fs::exists(filepath) || !fs::is_directory(filepath)) {
+            std::cout << "file path misstake !!" << std::endl;
             exit(0);
         }
 
@@ -50,6 +52,8 @@ namespace addCloud {
         for(fs::directory_iterator pos(filepath); pos!=last; ++pos) {
             ++count;
         }
+
+        std::cout << "files num : " << std::to_string(count) << std::endl;
     }
 
     void SumCloud::run() {
