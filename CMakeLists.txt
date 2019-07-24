@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
 set(SOURCE_NAME
+        src/getRotationVector.cpp
+        include/getRotationVector.hpp
         src/addCloud.cpp
         include/addCloud.hpp)
 
