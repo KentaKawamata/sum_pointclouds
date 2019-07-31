@@ -16,7 +16,7 @@ namespace addCloud {
         sum_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         filepath ("/mnt/container-data/ply_data/"),
-        R (Eigen::Matrix4d::Identity()),
+        R (Eigen::Matrix4f::Identity()),
         count (0)
     {
         rote = new GetRotationVector();
@@ -46,6 +46,32 @@ namespace addCloud {
         sor.filter(*cloud);
     }
 
+    void SumCloud::filteredCloud(){
+    
+        pcl::PassThrough<pcl::PointXYZ> passX;
+        passX.setInputCloud(cloud);
+        passX.setFilterFieldName("x");
+        passX.setFilterLimits(-3.2, 3.2);
+        passX.setFilterLimitsNegative (false);
+        passX.filter(*cloud);
+
+        pcl::PassThrough<pcl::PointXYZ> passY;
+        passY.setInputCloud(cloud);
+        passY.setFilterFieldName("y");
+        passY.setFilterLimits(0.0, 2.6);
+        passY.setFilterLimitsNegative (false);
+        passY.filter(*cloud);
+
+        pcl::PassThrough<pcl::PointXYZ> passZ;
+        passZ.setInputCloud(cloud);
+        passZ.setFilterFieldName("z");
+        passZ.setFilterLimits(0.0, 4.0);
+        passZ.setFilterLimitsNegative (false);
+        passZ.filter(*cloud);
+    }
+
+
+
     void SumCloud::addPointCloud() {
 
         for(int i=0; i<count; i++) {
@@ -57,6 +83,8 @@ namespace addCloud {
             filename = filepath + std::to_string(i) + ".ply";
             std::cout << "READ FILE NAME : " << filename << std::endl;
             pcl::io::loadPLYFile(filename, *cloud);
+
+            filteredCloud();
             
             /**
              * getRotationVectorへ数字を渡し,
@@ -65,6 +93,7 @@ namespace addCloud {
             **/
             rote->transformPointCloud(i);
             R = rote->R;
+            
             pcl::transformPointCloud(*cloud, *cloud, R);
 
             voxelization_filter();
