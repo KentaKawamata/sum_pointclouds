@@ -89,6 +89,11 @@ namespace addCloud {
             /**
              * getRotationVectorへ数字を渡し,
              * getRotationVectorで得た回転ベクトルRを受け取る
+             * 
+             * | R00 R01 R02 t0 |
+             * | R10 R11 R12 t1 |
+             * | R20 R21 R22 t2 |
+             * |  0   0   0   1 |
              *
             **/
             rote->transformPointCloud(i);
