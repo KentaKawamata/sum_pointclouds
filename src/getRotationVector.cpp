@@ -6,12 +6,12 @@ GetRotationVector::GetRotationVector() :
 {
 }
 
-GetRotationVector::~GetRotationVector() {
-    
+GetRotationVector::~GetRotationVector()
+{
 }
 
-void GetRotationVector::getRotation(std::string& filename){
-
+void GetRotationVector::getRotation(const std::string& filename)
+{
     std::vector<float> rotation_vec(16, 0.0);
     std::ifstream ifs(filename);
 
@@ -49,7 +49,23 @@ void GetRotationVector::getRotation(std::string& filename){
     R(3,3) = 1.0;
 }
 
+void GetRotationVector::get_matrix4x4(const std::string &path)
+{
+    getRotation(path);
+}
+
 void GetRotationVector::transformPointCloud(int number) {
+
+    /**
+     * getRotationVectorへ数字を渡し,
+     * getRotationVectorで得た回転ベクトルRを受け取る
+     * 
+     * | R00 R01 R02 t0 |
+     * | R10 R11 R12 t1 |
+     * | R20 R21 R22 t2 |
+     * |  0   0   0   1 |
+     *
+     **/
 
     std::string filename = "/mnt/container-data/rotation/" + std::to_string(number) + ".txt";
     getRotation(filename);

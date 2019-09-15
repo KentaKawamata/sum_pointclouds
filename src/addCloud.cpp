@@ -7,15 +7,17 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/transforms.h>
 
 #include "./../include/addCloud.hpp"
 
 namespace addCloud {
 
-    SumCloud::SumCloud() : 
+    SumCloud::SumCloud(const std::string &file_path) : 
         sum_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
+        total_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         cloud (new pcl::PointCloud<pcl::PointXYZ>()),
-        filepath ("/mnt/container-data/ply_data/"),
+        filepath (file_path),
         R (Eigen::Matrix4f::Identity()),
         count (0)
     {
@@ -41,9 +43,9 @@ namespace addCloud {
 
         float voxel_size = 0.0128;
         pcl::VoxelGrid<pcl::PointXYZ> sor;
-        sor.setInputCloud(cloud);
+        sor.setInputCloud(total_cloud);
         sor.setLeafSize(voxel_size, voxel_size, voxel_size);
-        sor.filter(*cloud);
+        sor.filter(*total_cloud);
     }
 
     void SumCloud::filteredCloud(){
@@ -71,7 +73,6 @@ namespace addCloud {
     }
 
 
-
     void SumCloud::addPointCloud() {
 
         for(int i=0; i<count; i++) {
@@ -86,16 +87,6 @@ namespace addCloud {
 
             filteredCloud();
             
-            /**
-             * getRotationVectorへ数字を渡し,
-             * getRotationVectorで得た回転ベクトルRを受け取る
-             * 
-             * | R00 R01 R02 t0 |
-             * | R10 R11 R12 t1 |
-             * | R20 R21 R22 t2 |
-             * |  0   0   0   1 |
-             *
-            **/
             rote->transformPointCloud(i);
             R = rote->R;
             
@@ -116,35 +107,86 @@ namespace addCloud {
         pcl::io::savePLYFileASCII(save_filename, *sum_cloud);
     }
 
-    void SumCloud::getfileNum() {
-
+    int SumCloud::getfileNum()
+    {
         namespace fs = boost::filesystem;
-        if(!fs::exists(filepath) || !fs::is_directory(filepath)) {
+        if(!fs::exists(filepath) || !fs::is_directory(filepath))
+        {
             std::cout << "file path misstake !!" << std::endl;
             exit(0);
         }
 
         fs::directory_iterator last;
-        for(fs::directory_iterator pos(filepath); pos!=last; ++pos) {
+        for(fs::directory_iterator pos(filepath); pos!=last; ++pos)
+        {
             ++count;
         }
 
         std::cout << "files num : " << std::to_string(count) << std::endl;
+
+        return count;
     }
 
     void SumCloud::run() {
 
-        getfileNum();
+        int i = getfileNum();
         addPointCloud();
         savePointcloud();
+    }
+
+    void SumCloud::make_total_cloud()
+    {
+        int num = getfileNum();
+
+        for(int i=0; i<num; i++)
+        {
+            std::string cloud_name = filepath + std::to_string(i) + ".ply"; 
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+            pcl::io::loadPLYFile(cloud_name, *cloud);
+
+            for(int j=i; j>0; j--)
+            {
+	            std::string matrix_name = filepath 
+                                        + "matrix" 
+                                        + std::to_string(j-1) 
+                                        + "-" 
+                                        + std::to_string(j) 
+                                        + ".txt";
+
+                rote->get_matrix4x4(matrix_name);
+                R = rote->R;
+                pcl::transformPointCloud(*cloud, *cloud, R);
+            }
+            outlineFilter();
+            *total_cloud += *cloud; 
+            voxelization_filter();
+        }
+         
+        std::string save_name = "/mnt/container-data/katori_0906/ply_total/after1-2.ply";
+        pcl::io::savePLYFileASCII(save_name, *total_cloud);
     }
 }
 
 int main(int argc, char *argv[]) {
 
+	std::string file_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for/regi/TS_1-2/");
+	int num;
+	try
+	{
+		num = std::stoi(argv[1]) - 1;
+	}
+	catch(const std::exception& e)
+	{
+		//std::cerr << e.what() << '\n';
+	}
+	// model       : observationに対して位置を合わせる点群 
+	// observation : 基準となる点群
+	std::string model_path = file_path + argv[1] + ".ply";
+	std::string obs_path = file_path + std::to_string(num) + ".ply";
+
     addCloud::SumCloud *sum;
-    sum = new addCloud::SumCloud();
-    sum->run();
+    sum = new addCloud::SumCloud(file_path);
+    sum->make_total_cloud();
 
     delete sum; 
    

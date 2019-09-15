@@ -8,15 +8,16 @@ class GetRotationVector {
 
 private:
 
-    void getRotation(std::string& filename);
+    void getRotation(const std::string& filename);
 
 public:
 
-    Eigen::Matrix4d R;
+    Eigen::Matrix4f R;
 
     GetRotationVector();
     ~GetRotationVector();
     void transformPointCloud(int number);
+    void get_matrix4x4(const std::string& filename);
     
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

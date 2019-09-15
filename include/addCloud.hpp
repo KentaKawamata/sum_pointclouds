@@ -18,22 +18,26 @@ namespace addCloud {
         std::string filepath;
         std::string filename;
         
-        Eigen::Matrix4d R;
+        Eigen::Matrix4f R;
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr sum_cloud;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+        
+        pcl::PointCloud<pcl::PointXYZ>::Ptr total_cloud;
 
         void addPointCloud();
         void savePointcloud();
-        void getfileNum();
+        int getfileNum();
         void outlineFilter();
         void voxelization_filter();
+        void filteredCloud();
 
     public:
 
-        SumCloud();
+        SumCloud(const std::string &file_path);
         ~SumCloud();
         void run();
+        void make_total_cloud();
 
         GetRotationVector *rote;
     
