@@ -13,11 +13,15 @@
 
 namespace addCloud {
 
-    SumCloud::SumCloud(const std::string &file_path) : 
+    SumCloud::SumCloud(const std::string &file_path, 
+                       const std::string &matrix_path,
+                       const std::string &code) : 
         sum_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         total_cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         cloud (new pcl::PointCloud<pcl::PointXYZ>()),
         filepath (file_path),
+        matrixpath (matrix_path),
+        file_code (code),
         R (Eigen::Matrix4f::Identity()),
         count (0)
     {
@@ -48,65 +52,6 @@ namespace addCloud {
         sor.filter(*total_cloud);
     }
 
-    void SumCloud::filteredCloud(){
-    
-        pcl::PassThrough<pcl::PointXYZ> passX;
-        passX.setInputCloud(cloud);
-        passX.setFilterFieldName("x");
-        passX.setFilterLimits(-3.2, 3.2);
-        passX.setFilterLimitsNegative (false);
-        passX.filter(*cloud);
-
-        pcl::PassThrough<pcl::PointXYZ> passY;
-        passY.setInputCloud(cloud);
-        passY.setFilterFieldName("y");
-        passY.setFilterLimits(0.0, 2.6);
-        passY.setFilterLimitsNegative (false);
-        passY.filter(*cloud);
-
-        pcl::PassThrough<pcl::PointXYZ> passZ;
-        passZ.setInputCloud(cloud);
-        passZ.setFilterFieldName("z");
-        passZ.setFilterLimits(0.0, 4.0);
-        passZ.setFilterLimitsNegative (false);
-        passZ.filter(*cloud);
-    }
-
-
-    void SumCloud::addPointCloud() {
-
-        for(int i=0; i<count; i++) {
-
-            cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-            //tmp_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-
-
-            filename = filepath + std::to_string(i) + ".ply";
-            std::cout << "READ FILE NAME : " << filename << std::endl;
-            pcl::io::loadPLYFile(filename, *cloud);
-
-            filteredCloud();
-            
-            rote->transformPointCloud(i);
-            R = rote->R;
-            
-            pcl::transformPointCloud(*cloud, *cloud, R);
-
-            voxelization_filter();
-            outlineFilter();
-        
-            *sum_cloud += *cloud;
-
-        }
-    }
-
-    void SumCloud::savePointcloud() {
-
-        std::string save_filename = "/mnt/container-data/test_0724.ply"; 
-        std::cout << "SAVE FILE NAME : " << save_filename << std::endl;
-        pcl::io::savePLYFileASCII(save_filename, *sum_cloud);
-    }
-
     int SumCloud::getfileNum()
     {
         namespace fs = boost::filesystem;
@@ -127,12 +72,7 @@ namespace addCloud {
         return count;
     }
 
-    void SumCloud::run() {
-
-        int i = getfileNum();
-        addPointCloud();
-        savePointcloud();
-    }
+    
 
     void SumCloud::make_total_cloud()
     {
@@ -140,16 +80,16 @@ namespace addCloud {
 
         for(int i=0; i<num; i++)
         {
-            std::string cloud_name = filepath + std::to_string(i) + ".ply"; 
+            std::string cloud_name = filepath + file_code + std::to_string(i) + ".ply"; 
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::io::loadPLYFile(cloud_name, *cloud);
 
             for(int j=i; j>0; j--)
             {
-	            std::string matrix_name = filepath 
+	            std::string matrix_name = matrixpath 
                                         + "matrix" 
                                         + std::to_string(j-1) 
-                                        + "-" 
+                                        + "_" 
                                         + std::to_string(j) 
                                         + ".txt";
 
@@ -157,9 +97,9 @@ namespace addCloud {
                 R = rote->R;
                 pcl::transformPointCloud(*cloud, *cloud, R);
             }
-            outlineFilter();
+            //outlineFilter();
             *total_cloud += *cloud; 
-            voxelization_filter();
+            //voxelization_filter();
         }
          
         std::string save_name = "/mnt/container-data/katori_0906/ply_total/after1-2.ply";
@@ -169,23 +109,12 @@ namespace addCloud {
 
 int main(int argc, char *argv[]) {
 
-	std::string file_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for/regi/TS_1-2/");
-	int num;
-	try
-	{
-		num = std::stoi(argv[1]) - 1;
-	}
-	catch(const std::exception& e)
-	{
-		//std::cerr << e.what() << '\n';
-	}
-	// model       : observationに対して位置を合わせる点群 
-	// observation : 基準となる点群
-	std::string model_path = file_path + argv[1] + ".ply";
-	std::string obs_path = file_path + std::to_string(num) + ".ply";
+	std::string file_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for_calc_volume/TS_1_2/");
+    std::string file_code("after1_2_");
+	std::string matrix_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for_regi/TS_1_2/");
 
     addCloud::SumCloud *sum;
-    sum = new addCloud::SumCloud(file_path);
+    sum = new addCloud::SumCloud(file_path, matrix_path, file_code);
     sum->make_total_cloud();
 
     delete sum; 

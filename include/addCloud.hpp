@@ -16,7 +16,9 @@ namespace addCloud {
 
         int count;
         std::string filepath;
+        std::string matrixpath;
         std::string filename;
+        std::string file_code;
         
         Eigen::Matrix4f R;
 
@@ -34,7 +36,9 @@ namespace addCloud {
 
     public:
 
-        SumCloud(const std::string &file_path);
+        SumCloud(const std::string &file_path, 
+                 const std::string &matrix_path, 
+                 const std::string &code);
         ~SumCloud();
         void run();
         void make_total_cloud();
