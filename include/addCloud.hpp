@@ -33,6 +33,7 @@ namespace addCloud {
         void outlineFilter();
         void voxelization_filter();
         void filteredCloud();
+        void remove_plane(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 
     public:
 

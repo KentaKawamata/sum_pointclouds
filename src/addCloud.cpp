@@ -9,6 +9,10 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/common/transforms.h>
 
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+
 #include "./../include/addCloud.hpp"
 
 namespace addCloud {
@@ -31,6 +35,33 @@ namespace addCloud {
     SumCloud::~SumCloud() {
         delete rote;
     }
+
+    void SumCloud::remove_plane(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+    {
+        pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+        pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+        boost::shared_ptr<pcl::SACSegmentation<pcl::PointXYZ>> seg (new pcl::SACSegmentation<pcl::PointXYZ>);
+    
+        seg->setOptimizeCoefficients(true);
+        seg->setModelType(pcl::SACMODEL_PLANE);
+        seg->setMethodType(pcl::SAC_RANSAC);
+        seg->setDistanceThreshold(0.15);
+        seg->setInputCloud(cloud);
+        seg->segment(*inliers, *coefficients);
+
+        std::cout << cloud->points.size() << std::endl;
+
+        if(inliers->indices.size() != 0)
+        {
+            for (size_t i=0; i<inliers->indices.size(); ++i)
+            {
+                cloud->points[inliers->indices[i]].x = 0.0;
+                cloud->points[inliers->indices[i]].y = 0.0;
+                cloud->points[inliers->indices[i]].z = 0.0;
+            }
+        }
+    }
+
 
     void SumCloud::outlineFilter() {
 
@@ -83,6 +114,7 @@ namespace addCloud {
             std::string cloud_name = filepath + file_code + std::to_string(i) + ".ply"; 
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::io::loadPLYFile(cloud_name, *cloud);
+            remove_plane(cloud);
 
             for(int j=i; j>0; j--)
             {
@@ -110,7 +142,7 @@ namespace addCloud {
 int main(int argc, char *argv[]) {
 
 	std::string file_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for_calc_volume/TS_1_2/");
-    std::string file_code("after1_2_");
+    std::string file_code("");
 	std::string matrix_path("/mnt/container-data/katori_0906/ply_data/after/enable_rotation/for_regi/TS_1_2/");
 
     addCloud::SumCloud *sum;
